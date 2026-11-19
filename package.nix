@@ -149,6 +149,9 @@ EOF
   '';
 
   postFixup = ''
+    # Symlink config so jpackage can find it even when the binary is named .incy-unwrapped
+    ln -s incy.cfg $out/lib/incy/lib/app/.incy-unwrapped.cfg
+
     # Wrap the internal binary directly so that any invocation (including via
     # ProcessHandle.current().info().command() or custom desktop entries) is wrapped.
     mv $out/lib/incy/bin/incy $out/lib/incy/bin/.incy-unwrapped
