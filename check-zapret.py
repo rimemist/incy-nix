@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import sys
-import time
 
 def is_zapret_active():
     """Detect if any Zapret component (nfqws, tpws, zapret service) is active."""
@@ -45,27 +44,21 @@ def main():
     if not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
         sys.exit(0)
 
-    cache_dir = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
-    marker_dir = os.path.join(cache_dir, "incy")
-    marker_file = os.path.join(marker_dir, "zapret_warned")
-
     if not is_zapret_active():
-        if os.path.exists(marker_file):
-            try:
-                os.remove(marker_file)
-            except OSError:
-                pass
         sys.exit(0)
 
-    # Cooldown check: don't annoy the user if warned within the last 10 minutes
-    os.makedirs(marker_dir, exist_ok=True)
-    if os.path.exists(marker_file):
+    # Prevent duplicate warning windows if one is already open
+    my_pid = os.getpid()
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit() or int(pid) == my_pid:
+            continue
         try:
-            mtime = os.path.getmtime(marker_file)
-            if time.time() - mtime < 600:
-                sys.exit(0)
-        except OSError:
-            pass
+            with open(f"/proc/{pid}/cmdline", "rb") as f:
+                cmd = f.read().decode(errors="ignore")
+                if "check-zapret.py" in cmd:
+                    sys.exit(0)
+        except (FileNotFoundError, PermissionError, ProcessLookupError):
+            continue
 
     try:
         import gi
@@ -113,13 +106,6 @@ def main():
         dialog.destroy()
         while Gtk.events_pending():
             Gtk.main_iteration()
-
-        # Update cooldown timestamp only after successful display
-        try:
-            with open(marker_file, "w") as f:
-                f.write(str(int(time.time())))
-        except OSError:
-            pass
 
     except Exception as e:
         print(f"[INCY Warning] Zapret is active: {e}", file=sys.stderr)
