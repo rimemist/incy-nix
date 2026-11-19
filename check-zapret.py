@@ -3,21 +3,28 @@ import os
 import sys
 
 def is_zapret_active():
-    """Detect if any Zapret component (nfqws, tpws, zapret service) is active."""
-    target_names = {"nfqws", "tpws"}
+    """Detect if any Zapret component (nfqws, tpws, zapret daemon) is active."""
+    target_names = {"nfqws", "tpws", "zapret"}
     try:
         for pid in os.listdir("/proc"):
             if not pid.isdigit():
                 continue
             try:
                 with open(f"/proc/{pid}/comm", "r") as f:
-                    comm = f.read().strip()
-                if comm in target_names or "zapret" in comm.lower():
-                    return True
+                    comm = f.read().strip().lower()
+                if any(t in comm for t in target_names):
+                    if comm != "check-zapret" and "python" not in comm:
+                        return True
+
                 with open(f"/proc/{pid}/cmdline", "rb") as f:
-                    cmdline = f.read().replace(b"\x00", b" ").decode(errors="ignore").lower()
-                if ("nfqws" in cmdline or "tpws" in cmdline or "zapret" in cmdline) and "check-zapret" not in cmdline and "python" not in cmdline:
-                    return True
+                    raw = f.read()
+                if not raw:
+                    continue
+                parts = raw.split(b"\x00")
+                if parts and parts[0]:
+                    exe = os.path.basename(parts[0].decode(errors="ignore")).lower()
+                    if any(t in exe for t in target_names) and "check-zapret" not in exe and "python" not in exe:
+                        return True
             except (FileNotFoundError, PermissionError, ProcessLookupError):
                 continue
     except Exception:
