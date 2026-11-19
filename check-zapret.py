@@ -82,8 +82,8 @@ def main():
                 "При одновременной работе с INCY (Xray / TUN) это часто приводит к "
                 "ошибкам TLS-сертификатов (Certificate verification failed) "
                 "или полной блокировке соединения.\n\n"
-                "Если у вас не работает подключение или возникают ошибки, остановите Zapret:\n"
-                "  sudo systemctl stop zapret-discord-youtube  (или stopz)"
+                "Если у вас не работает подключение или возникают ошибки, временно остановите "
+                "сервис вашего обхода (обратитесь к инструкции используемой сборки Zapret)."
             )
         else:
             title = "INCY — Conflict Warning"
@@ -93,8 +93,8 @@ def main():
                 "Zapret intercepts and modifies packets via NFQUEUE / iptables.\n"
                 "Running it simultaneously with INCY (Xray / TUN) often leads to "
                 "TLS handshake errors (certificate validation failures) or dropped connections.\n\n"
-                "If INCY fails to connect or throws certificate errors, stop Zapret:\n"
-                "  sudo systemctl stop zapret-discord-youtube  (or stopz)"
+                "If INCY fails to connect or throws certificate errors, temporarily stop your "
+                "DPI bypass service (refer to the documentation of your specific Zapret setup)."
             )
 
         dialog = Gtk.MessageDialog(

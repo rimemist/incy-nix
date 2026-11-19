@@ -126,17 +126,9 @@ This package comes with an automatic, lightweight startup check:
 - To prevent spam, the warning features a 30-minute cooldown period per session.
 
 ### Recommended Workaround
-If you encounter errors when connecting INCY, temporarily stop the Zapret service:
+If you encounter errors when connecting INCY, temporarily stop your Zapret / DPI bypass service (refer to the documentation of your specific bypass setup or fork for the appropriate command, e.g. stopping the corresponding systemd service or script).
 
-```bash
-# For zapret-discord-youtube:
-sudo systemctl stop zapret-discord-youtube
-
-# Or use your shell alias if configured:
-stopz
-```
-
-Once INCY is connected in TUN mode, all your traffic is securely routed through the tunnel, making Zapret redundant while INCY is active.
+Once INCY is connected in TUN mode, all your traffic is securely routed through the tunnel, making a separate DPI bypass tool unnecessary while INCY is active.
 
 ---
 
