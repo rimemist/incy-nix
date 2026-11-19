@@ -94,13 +94,15 @@
             networking.firewall.trustedInterfaces = [ "tun_incy" ];
             networking.firewall.checkReversePath = "loose";
 
-            # Provide the privileged helper script at /usr/lib/incy/incy-helper-linux.sh
-            # and polkit policy at /usr/share/polkit-1/actions/cc.incy.vpn.policy
+            # Provide the privileged helper script at /usr/lib/incy/incy-helper-linux.sh,
+            # polkit policy at /usr/share/polkit-1/actions/cc.incy.vpn.policy,
+            # and binary symlink at /usr/bin/incy (for MIME handler and autostart registration)
             systemd.tmpfiles.rules = [
               "d /usr/lib/incy 0755 root root -"
               "L+ /usr/lib/incy/incy-helper-linux.sh - - - - ${cfg.package}/lib/incy/lib/app/resources/bin/incy-helper-linux.sh"
               "d /usr/share/polkit-1/actions 0755 root root -"
               "L+ /usr/share/polkit-1/actions/cc.incy.vpn.policy - - - - ${cfg.package}/lib/incy/lib/app/resources/cc.incy.vpn.policy"
+              "L+ /usr/bin/incy - - - - ${cfg.package}/bin/incy"
             ];
           };
         };

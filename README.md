@@ -61,10 +61,6 @@ The provided NixOS module configures all required system services, kernel module
 }
 ```
 
-> [!TIP]
-> If your repository is private or authenticated through SSH keys, use:
-> `url = "git+ssh://git@github.com/rimemist/incy-nix.git";`
-
 ### 2. Enable INCY in `configuration.nix`
 
 ```nix

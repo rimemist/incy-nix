@@ -149,11 +149,16 @@ EOF
   '';
 
   postFixup = ''
-    mkdir -p $out/bin
-    makeWrapper $out/lib/incy/bin/incy $out/bin/incy \
+    # Wrap the internal binary directly so that any invocation (including via
+    # ProcessHandle.current().info().command() or custom desktop entries) is wrapped.
+    mv $out/lib/incy/bin/incy $out/lib/incy/bin/.incy-unwrapped
+    makeWrapper $out/lib/incy/bin/.incy-unwrapped $out/lib/incy/bin/incy \
       "''${gappsWrapperArgs[@]}" \
       --prefix PATH : "${helperPath}" \
       --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath buildInputs}"
+
+    mkdir -p $out/bin
+    ln -sf $out/lib/incy/bin/incy $out/bin/incy
   '';
 
   meta = with lib; {
