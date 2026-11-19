@@ -1,42 +1,48 @@
-# INCY on NixOS (Flake)
+# INCY on NixOS
 
-Nix Flake for running and seamlessly integrating the [INCY](https://github.com/INCY-DEV/incy-platforms) client on **NixOS** — a fast, modern, and cross-platform proxy/VPN client with support for VLESS (Reality / XTLS Vision), VMess, Trojan, Shadowsocks, Hysteria2, WireGuard, and AmneziaWG.
+[![Nix Flake](https://img.shields.io/badge/Nix-Flake-blue.svg?logo=nixos&logoColor=white)](https://nixos.org)
+[![Platform](https://img.shields.io/badge/Platform-x86__64--linux%20%7C%20aarch64--linux-lightgrey.svg)](https://github.com/rimemist/incy-nix)
+[![License: Unfree](https://img.shields.io/badge/License-Unfree-orange.svg)](https://incy.cc)
+
+A ready-to-use **Nix Flake** for running and integrating the [INCY](https://github.com/INCY-DEV/incy-platforms) desktop client on **NixOS**.
+
+INCY is a fast, modern, and versatile proxy/VPN desktop client with native support for **VLESS** (Reality / XTLS Vision), **VMess**, **Trojan**, **Shadowsocks**, **Hysteria2**, **WireGuard**, and **AmneziaWG**.
 
 ---
 
-## 🚀 Quick Run Without Installation
+## ✨ Features
 
-Run the application directly using Nix Flakes:
+- **Zero-Friction TUN Mode**: No password spam! Connect, reconnect, and disconnect without repeated sudo/polkit authorization dialogs.
+- **Native System Tray Integration**: Full support for system tray / StatusNotifierItem on Wayland and X11 (KDE Plasma, GNOME, etc.) via Ayatana AppIndicator, enabling *Minimize to Tray* and *Hide to Tray*.
+- **XDG-Compliant**: Gracefully stores databases and configurations in standard user directories (`~/.config/incy`, `~/.local/share/incy`, `~/.cache/incy`) rather than attempting to write to the read-only Nix store.
+- **Desktop Ready**: Automatically provides high-resolution application icons, MIME protocol handlers (`incy://`), and desktop menu entries.
+- **Multi-Architecture**: Supports both `x86_64-linux` and `aarch64-linux`.
+
+---
+
+## 🚀 Quick Run (Ad-hoc)
+
+Launch INCY directly from GitHub without modifying your system configuration:
 
 ```bash
-# Locally from this repository directory:
-nix run .
-
-# Or directly from GitHub:
 nix run github:rimemist/incy-nix
 ```
 
 ---
 
-## 🛠️ NixOS Configuration Integration (Recommended)
+## 🛠️ NixOS Installation (Recommended)
 
-For full TUN (VPN) mode and system routing, the client requires root privileges via Polkit to configure network interfaces (`ip`, `iptables`, `resolvectl`).
+To use TUN (VPN) mode and system-wide routing, INCY requires root privileges to manage network interfaces (`tun_incy`, `ip`, `iptables`, `resolvectl`). 
 
-This flake includes a ready-to-use NixOS module that configures everything out of the box:
-1. Installs the `incy` package with its desktop entry (`.desktop`) and application icons.
-2. Loads the `tun` kernel module.
-3. Automatically authorizes members of the `wheel` group in Polkit for the privileged helper script without repeated password prompts on connect, reconnect, or disconnect.
-4. Provides fallback `NOPASSWD` sudo rules.
-5. Sets up systemd tmpfiles symlinks for `/usr/lib/incy/incy-helper-linux.sh` and `/usr/share/polkit-1/actions/cc.incy.vpn.policy` to satisfy the application's internal file integrity checks.
-6. Configures firewall settings for the `tun_incy` interface.
+The provided NixOS module configures all required system services, kernel modules, firewall rules, and Polkit permissions automatically.
 
-### 1. Add the flake input to your system `flake.nix`
+### 1. Add `incy-nix` to your system `flake.nix`
 
 ```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    
+
     incy-nix = {
       url = "github:rimemist/incy-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -56,9 +62,10 @@ This flake includes a ready-to-use NixOS module that configures everything out o
 ```
 
 > [!TIP]
-> If your repository is private or you use SSH keys with GitHub, you can use `url = "git+ssh://git@github.com/rimemist/incy-nix.git";`.
+> If your repository is private or authenticated through SSH keys, use:
+> `url = "git+ssh://git@github.com/rimemist/incy-nix.git";`
 
-### 2. Enable the module in `configuration.nix`
+### 2. Enable INCY in `configuration.nix`
 
 ```nix
 { config, pkgs, ... }:
@@ -68,7 +75,7 @@ This flake includes a ready-to-use NixOS module that configures everything out o
 }
 ```
 
-### 3. Rebuild your system
+### 3. Apply your configuration
 
 ```bash
 sudo nixos-rebuild switch --flake .#your-hostname
@@ -76,43 +83,40 @@ sudo nixos-rebuild switch --flake .#your-hostname
 
 ---
 
-## 📦 Standalone Package Usage (Without NixOS Module)
+## 📦 Standalone Package (Home Manager / Non-Root)
 
-If you only want to install INCY as a user package (e.g. via Home Manager or directly in `environment.systemPackages` without system routing privileges):
+If you only use proxy mode (SOCKS5 / HTTP) or prefer managing user packages through Home Manager without system routing services:
 
-### Via `environment.systemPackages`:
 ```nix
-environment.systemPackages = [
-  inputs.incy-nix.packages.${pkgs.system}.default
-];
-```
+# home.nix
+{ pkgs, inputs, ... }:
 
-### Via Home Manager:
-```nix
-home.packages = [
-  inputs.incy-nix.packages.${pkgs.system}.default
-];
+{
+  home.packages = [
+    inputs.incy-nix.packages.${pkgs.system}.default
+  ];
+}
 ```
-
-> [!NOTE]
-> In standalone System Proxy mode (SOCKS5 / HTTP), INCY runs without root privileges. For full TUN (VPN) mode, the NixOS module (`programs.incy.enable = true;`) is required.
 
 ---
 
-## 🔍 How It Works & NixOS Fixes
+## 🔄 Updating INCY
 
-INCY Desktop is developed with Kotlin / Compose Multiplatform (Skiko) and bundled using `jpackage` alongside native Go/C binaries for Xray and VPN routing. On NixOS, several adaptations were made:
+Whenever a new version or fix is pushed to this repository, update your system lock file and rebuild:
 
-1. **Dynamic Linker & Shared Libraries (ELF Patching)**:
-   - The upstream binaries (`bin/incy`, `incy-worker`, `libskiko-linux-x64.so`, `libincycore.so`, OpenJDK runtime) contain hardcoded paths to `/lib64/ld-linux-x86-64.so.2`, which does not exist on standard NixOS.
-   - `autoPatchelfHook` automatically patches all binaries and shared objects to use Nixpkgs `glibc` and links graphical/audio libraries (`libGL`, `libX11`, `libXext`, `libXi`, `libXrender`, `libXtst`, `fontconfig`, `freetype`, `alsa-lib`, `libstdc++`).
+```bash
+# Update the flake input
+nix flake update incy-nix
 
-2. **Read-Only Nix Store Compatibility (Portable vs XDG)**:
-   - The portable distribution includes `config/.portable`. When present, INCY attempts to write its SQLite database (`incy.db`), routing configurations, and logs directly adjacent to the executable. In the read-only `/nix/store`, this causes permission errors.
-   - The build process strips `config/`, causing INCY to gracefully fall back to standard XDG paths (`~/.config/incy`, `~/.local/share/incy`, `~/.cache/incy`).
+# Rebuild your NixOS system
+sudo nixos-rebuild switch --flake .#your-hostname
+```
 
-3. **Privileged Helper & Zero Password Prompts**:
-   - In TUN mode, INCY invokes `/usr/lib/incy/incy-helper-linux.sh` via `pkexec` multiple times (to clear stale killswitch rules, set up routes/DNS, and cleanup upon disconnection).
-   - The helper script is patched to inject Nix store paths for `ip`, `iptables`, `resolvectl`, and `systemd` tools into its `PATH`.
-   - The NixOS module installs Polkit rules authorizing users in the `wheel` group with `polkit.Result.YES`, removing password prompts.
-   - `systemd.tmpfiles` maintains symlinks at `/usr/lib/incy/incy-helper-linux.sh` and `/usr/share/polkit-1/actions/cc.incy.vpn.policy`, satisfying INCY's internal file integrity checks.
+---
+
+## 🔧 Technical Highlights (Under the Hood)
+
+- **Patched Dynamic Linker & Libraries**: All binaries and shared libraries (`libskiko`, `libincycore`, `libxray_ffi`, OpenJDK) are automatically patched with `autoPatchelfHook` against Nixpkgs libraries (`glibc`, `libGL`, `libX11`, `freetype`, `alsa-lib`, etc.).
+- **AppIndicator Tray Bridge**: Wrapped with GObject Introspection (`wrapGAppsHook3`), GTK 3, and Python bindings (`libayatana-appindicator`, `pygobject3`), allowing the tray helper script to register a D-Bus `StatusNotifierItem` across modern Wayland and X11 compositors.
+- **Polkit Automation**: Deploys a dedicated Polkit JavaScript rule authorizing users in the `wheel` group with `polkit.Result.YES` for INCY's privileged helper script, preventing authentication popups on connect and disconnect.
+- **Routing & DNS**: Injects Nix store paths (`iproute2`, `iptables`, `systemd`) directly into `incy-helper-linux.sh` and ensures the `tun` kernel module is loaded with loose reverse-path filtering.

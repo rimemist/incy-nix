@@ -4,6 +4,11 @@
 , autoPatchelfHook
 , makeWrapper
 , unzip
+, wrapGAppsHook3
+, gobject-introspection
+, python3
+, gtk3
+, libayatana-appindicator
 , alsa-lib
 , fontconfig
 , freetype
@@ -40,11 +45,16 @@ let
 
   srcInfo = sources.${stdenv.hostPlatform.system} or (throw "Unsupported system: ${stdenv.hostPlatform.system}");
 
+  pythonEnv = python3.withPackages (ps: [
+    ps.pygobject3
+  ]);
+
   helperPath = lib.makeBinPath [
     iproute2
     iptables
     systemd
     coreutils
+    pythonEnv
   ];
 
 in
@@ -61,6 +71,8 @@ stdenv.mkDerivation rec {
     autoPatchelfHook
     makeWrapper
     unzip
+    wrapGAppsHook3
+    gobject-introspection
   ];
 
   buildInputs = [
@@ -79,8 +91,12 @@ stdenv.mkDerivation rec {
     freetype
     alsa-lib
     zlib
+    gtk3
+    libayatana-appindicator
+    pythonEnv
   ];
 
+  dontWrapGApps = true;
   dontStrip = true;
 
   sourceRoot = "incy";
@@ -129,13 +145,15 @@ StartupWMClass=llc.itdev.incy.MainKt
 MimeType=x-scheme-handler/incy;
 EOF
 
-    # Binary wrapper in $out/bin
+    runHook postInstall
+  '';
+
+  postFixup = ''
     mkdir -p $out/bin
     makeWrapper $out/lib/incy/bin/incy $out/bin/incy \
+      "''${gappsWrapperArgs[@]}" \
       --prefix PATH : "${helperPath}" \
       --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath buildInputs}"
-
-    runHook postInstall
   '';
 
   meta = with lib; {
