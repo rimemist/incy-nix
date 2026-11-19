@@ -152,13 +152,24 @@ EOF
     # Symlink config so jpackage can find it even when the binary is named .incy-unwrapped
     ln -s incy.cfg $out/lib/incy/lib/app/.incy-unwrapped.cfg
 
-    # Wrap the internal binary directly so that any invocation (including via
-    # ProcessHandle.current().info().command() or custom desktop entries) is wrapped.
+    # Install zapret conflict detection script
+    install -Dm755 ${./check-zapret.py} $out/lib/incy/check-zapret.py
+
+    # Wrap the internal binary directly so that any invocation is wrapped with all
+    # desktop, Gtk, AppIndicator, and python dependencies.
     mv $out/lib/incy/bin/incy $out/lib/incy/bin/.incy-unwrapped
-    makeWrapper $out/lib/incy/bin/.incy-unwrapped $out/lib/incy/bin/incy \
+    makeWrapper $out/lib/incy/bin/.incy-unwrapped $out/lib/incy/bin/.incy-wrapped \
       "''${gappsWrapperArgs[@]}" \
       --prefix PATH : "${helperPath}" \
       --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath buildInputs}"
+
+    # Create the launcher script that performs the background zapret check and invokes the wrapped binary
+    cat << EOF > $out/lib/incy/bin/incy
+#!${stdenv.shell}
+(${pythonEnv}/bin/python3 $out/lib/incy/check-zapret.py "\$@" >/dev/null 2>&1 &)
+exec $out/lib/incy/bin/.incy-wrapped "\$@"
+EOF
+    chmod +x $out/lib/incy/bin/incy
 
     mkdir -p $out/bin
     ln -sf $out/lib/incy/bin/incy $out/bin/incy

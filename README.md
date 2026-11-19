@@ -110,6 +110,36 @@ sudo nixos-rebuild switch --flake .#your-hostname
 
 ---
 
+## ⚠️ Coexistence with Zapret (DPI Bypass Tools)
+
+If you are running **Zapret** (such as `zapret-discord-youtube`, Flowseal's zapret, or standalone `nfqws` / `tpws`), you might experience connection issues or certificate validation errors in INCY:
+
+### Why Does This Happen?
+Zapret uses Linux `iptables` / `nftables` with `NFQUEUE` to intercept and fragment TCP/TLS packets on ports 80 and 443 (e.g. injecting fake SNI or splitting TLS ClientHello). When INCY connects over encrypted protocols (such as VLESS, Trojan, or Hysteria2) or establishes a system-wide TUN tunnel, Zapret's packet mangling rules can inadvertently corrupt INCY's outbound TLS handshakes. This leads to:
+- `Certificate verification failed` or SSL handshake errors.
+- Inability to establish or maintain the VPN/proxy connection.
+
+### Built-in Detection & Warning
+This package comes with an automatic, lightweight startup check:
+- If Zapret (`nfqws`, `tpws`, or `zapret` services) is actively running when INCY starts, a desktop warning dialog appears advising you of potential conflicts.
+- The check runs asynchronously in the background and will never block or delay the startup of INCY.
+- To prevent spam, the warning features a 30-minute cooldown period per session.
+
+### Recommended Workaround
+If you encounter errors when connecting INCY, temporarily stop the Zapret service:
+
+```bash
+# For zapret-discord-youtube:
+sudo systemctl stop zapret-discord-youtube
+
+# Or use your shell alias if configured:
+stopz
+```
+
+Once INCY is connected in TUN mode, all your traffic is securely routed through the tunnel, making Zapret redundant while INCY is active.
+
+---
+
 ## 🔧 Technical Highlights (Under the Hood)
 
 - **Patched Dynamic Linker & Libraries**: All binaries and shared libraries (`libskiko`, `libincycore`, `libxray_ffi`, OpenJDK) are automatically patched with `autoPatchelfHook` against Nixpkgs libraries (`glibc`, `libGL`, `libX11`, `freetype`, `alsa-lib`, etc.).
