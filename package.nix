@@ -155,6 +155,11 @@ EOF
     # Install zapret conflict detection script
     install -Dm755 ${./check-zapret.py} $out/lib/incy/check-zapret.py
 
+    # Wrap check-zapret with full GTK and typelib environment
+    makeWrapper ${pythonEnv}/bin/python3 $out/lib/incy/bin/check-zapret \
+      "''${gappsWrapperArgs[@]}" \
+      --add-flags "$out/lib/incy/check-zapret.py"
+
     # Wrap the internal binary directly so that any invocation is wrapped with all
     # desktop, Gtk, AppIndicator, and python dependencies.
     mv $out/lib/incy/bin/incy $out/lib/incy/bin/.incy-unwrapped
@@ -166,7 +171,7 @@ EOF
     # Create the launcher script that performs the background zapret check and invokes the wrapped binary
     cat << EOF > $out/lib/incy/bin/incy
 #!${stdenv.shell}
-(${pythonEnv}/bin/python3 $out/lib/incy/check-zapret.py "\$@" >/dev/null 2>&1 &)
+($out/lib/incy/bin/check-zapret "\$@" >/dev/null 2>&1 &)
 exec $out/lib/incy/bin/.incy-wrapped "\$@"
 EOF
     chmod +x $out/lib/incy/bin/incy

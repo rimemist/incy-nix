@@ -57,21 +57,15 @@ def main():
                 pass
         sys.exit(0)
 
-    # Cooldown check: don't annoy the user if warned in the last 30 minutes
+    # Cooldown check: don't annoy the user if warned within the last 10 minutes
     os.makedirs(marker_dir, exist_ok=True)
     if os.path.exists(marker_file):
         try:
             mtime = os.path.getmtime(marker_file)
-            if time.time() - mtime < 1800:
+            if time.time() - mtime < 600:
                 sys.exit(0)
         except OSError:
             pass
-
-    try:
-        with open(marker_file, "w") as f:
-            f.write(str(int(time.time())))
-    except OSError:
-        pass
 
     try:
         import gi
@@ -114,8 +108,19 @@ def main():
         dialog.set_title(title)
         dialog.set_position(Gtk.WindowPosition.CENTER)
         dialog.set_keep_above(True)
+        dialog.show_all()
         dialog.run()
         dialog.destroy()
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+
+        # Update cooldown timestamp only after successful display
+        try:
+            with open(marker_file, "w") as f:
+                f.write(str(int(time.time())))
+        except OSError:
+            pass
+
     except Exception as e:
         print(f"[INCY Warning] Zapret is active: {e}", file=sys.stderr)
 
